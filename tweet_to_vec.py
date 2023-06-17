@@ -44,7 +44,7 @@ class TweetToVec:
         
     def get_null_embedding(self):
         
-        return np.zeros(self.N * self.L)
+        return np.zeros(self.N)
 
     def long_enough(self, vec):
         
@@ -58,7 +58,8 @@ class TweetToVec:
             vec.append(self.get_null_embedding())
         
         vec = vec[:self.L]
-        vec = np.concatenate(vec)
+        print("!", np.array(vec).shape)
+        vec = np.concatenate(np.array(vec))
         print("!", len(vec))
         
         return vec
