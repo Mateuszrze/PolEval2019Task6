@@ -1,100 +1,154 @@
 import numpy as np
 from tqdm import tqdm
+import copy
+import torch
 
 import utils
 
 class TweetToVec:
     
-    def __init__(self, method = 'fixed_length', L = None):
+	def __init__(self, embeddings, method = 'fixed_length', L = None):
         
-        self.method = method
-        self.L = L
-    
-    def read_embeddings_from_file(self, filename):
+		self.N = embeddings['N']
+		self.W = embeddings['N']
+		self.embeddings = embeddings['vectors']
         
-        self.embeddings = dict()
-        
-        f = open(filename, 'r')
-        lines = f.readlines()
-        
-        w_str, n_str = lines[0].split(' ')
-        self.W = int(w_str)
-        self.N = int(n_str)
-        
-        for line in tqdm(lines[1:]):
-            vec, word = utils.str_to_vector(line, starts_with_word=True)
-            self.embeddings[word] = vec
-        
-    
-    def get_embedding(self, word):
-        
-        if word in self.embeddings.keys():
-            return self.embeddings[word]
-        return None
-    
-    def get_list_of_embeddings(self, tweet):
-        
-        vec = []
-        for word in tweet:
-            current_embedding = self.get_embedding(word)
-            if current_embedding is not None:
-                vec.append(current_embedding)
-                
-        return vec
-        
-    def get_null_embedding(self):
-        
-        return np.zeros(self.N)
+		self.method = method
 
-    def long_enough(self, vec):
-        
-        return (len(vec) >= self.L)
+		self.L = L
     
-    def fixed_length(self, tweet):
+	def get_embedding(self, word):
         
-        vec = self.get_list_of_embeddings(tweet)
-        
-        while not self.long_enough(vec):
-            vec.append(self.get_null_embedding())
-        
-        vec = vec[:self.L]
-        print("!", np.array(vec).shape)
-        vec = np.concatenate(np.array(vec))
-        print("!", len(vec))
-        
-        return vec
+		if word in self.embeddings.keys():
+			return self.embeddings[word]
+		return None
     
-    def average(self, tweet):
+	def get_list_of_embeddings(self, tweet):
         
-        vec = self.get_list_of_embeddings(tweet)
-        vec = np.array(vec)
-        #TODO: check if proper axis etc.
-        vec = np.sum(axis = 0) / vec.shape[0]
+		vec = []
+		for word in tweet:
+			current_embedding = self.get_embedding(word)
+			if current_embedding is not None:
+				vec.append(current_embedding)
+		
+		return vec
         
-        return vec
+	def get_null_embedding(self):
+        
+		return np.zeros(self.N)
+
+	def long_enough(self, vec):
+        
+		return (len(vec) >= self.L)
     
-    def take_all(self, tweet):
+	def fixed_length(self, tweet):
         
-        vec = self.get_list_of_embeddings(tweet)
-        vec = np.array(vec)
+		vec = self.get_list_of_embeddings(tweet)
         
-        vec = np.concatenate(vec)
+		while not self.long_enough(vec):
+			vec.append(self.get_null_embedding())
         
-        return vec
+		vec = vec[:self.L]
+		vec = np.concatenate(np.array(vec))
+        
+		return vec
+    
+	def average(self, tweet):
+        
+		vec = self.get_list_of_embeddings(tweet)
+		vec = np.array(vec)
+		#TODO: check if proper axis etc.
+		vec = np.sum(axis = 0) / vec.shape[0]
+        
+		return vec
+    
+	def take_all(self, tweet):
+        
+		vec = self.get_list_of_embeddings(tweet)
+		vec = np.array(vec)
+        
+		vec = np.concatenate(np.array(vec))
+        
+		return vec
         
     
-    def translate_to_vec(self, tweet):
-        '''
-        tweet: list of strings
-        Already filtered tweet, given as list of tokens/lemmas
-        '''
+	def translate_single(self, tweet):
+		'''
+		tweet: list of strings
+		Already filtered tweet, given as list of tokens/lemmas
+		'''
         
-        if self.method == 'fixed_length':
-            return self.fixed_length(tweet)
+		if self.method == 'fixed_length':
+			return self.fixed_length(tweet)
         
-        if self.method == 'average':
-            return self.average(tweet)
+		if self.method == 'average':
+			return self.average(tweet)
         
-        if self.method == 'take_all':
-            return self.take_all(tweet)
-        
+		if self.method == 'take_all':
+			return self.take_all(tweet)
+	
+	def translate_to_vectors(self, tweets):
+		
+		vectors = []
+		for tweet in tweets:
+			vec = self.translate_single(tweet)
+			vectors.append(vec)
+		
+		return vectors
+	
+	def group_into_batches(self, vecs, batch_size = 32):
+		
+		batches = []
+		current_batch = []
+    
+		for v in vecs:
+		
+			current_batch.append(v)
+			if len(current_batch) == batch_size:
+				batches.append(np.array(current_batch))
+				current_batch = []
+		
+		if len(current_batch):
+			batches.append(np.array(current_batch))
+		
+		return batches
+	
+	def to_tensor(self, data):
+		#TODO: watch out for cpu/gpu!
+		return torch.from_numpy(data)
+	
+	def get_batched_data(self, vectors, tags, batch_size = 32, as_tensors = True):
+		
+		batched_vectors = self.group_into_batches(vectors, batch_size)
+		batched_tags = self.group_into_batches(tags, batch_size)
+		
+		if as_tensors:
+			batched_vectors = [self.to_tensor(batch).float() for batch in batched_vectors]
+			batched_tags = [self.to_tensor(batch).long() for batch in batched_tags]
+		
+		return batched_vectors, batched_tags
+	
+	def vectorize_dataset(self, dataset):
+	
+		vectorized_dataset = copy.deepcopy(dataset)
+		
+		vectorized_dataset['training tweets'] = self.translate_to_vectors(dataset['training tweets'])
+		vectorized_dataset['test tweets'] = self.translate_to_vectors(dataset['test tweets'])
+		
+		return vectorized_dataset
+	
+	def batch_dataset(self, dataset, batch_size = 32, as_tensors = True):
+		
+		batched_dataset = copy.deepcopy(dataset)
+		
+		batched_vectors, batched_tags = self.get_batched_data(vectors = batched_dataset['training tweets'], tags = batched_dataset['training tags'], batch_size = batch_size, as_tensors = as_tensors)
+		
+		batched_dataset['training tweets'] = batched_vectors
+		batched_dataset['training tags'] = batched_tags
+		
+		batched_vectors, batched_tags = self.get_batched_data(vectors = batched_dataset['test tweets'], tags = batched_dataset['test tags'], batch_size = len(batched_dataset['test tweets']), as_tensors = as_tensors)
+		
+		batched_dataset['test tweets'] = batched_vectors[0]
+		batched_dataset['test tags'] = batched_tags[0]
+		
+		return batched_dataset
