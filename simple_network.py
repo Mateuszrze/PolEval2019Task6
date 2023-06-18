@@ -35,7 +35,7 @@ class SimpleNetwork(nn.Module):
 
 
 		optimizer = get_optimizer(self.model.parameters())
-		scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.9)
+		scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.9)
         
 		for epoch in range(epochs):
 			tot_loss = 0
