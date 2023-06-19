@@ -1,7 +1,8 @@
 import numpy as np
 import subprocess
+import copy
 
-	
+
 
 def str_to_vector(vec_str, starts_with_word=False):
     
@@ -28,3 +29,34 @@ def save_results(predictions, filename):
 		f.write(str(int(pred)) + '\n')
 	
 
+
+def random_shuffle_train_dataset(dataset):
+	new_dataset = copy.deepcopy(dataset)
+	p = np.random.permutation(len(dataset['training tweets']))
+	for i in range(len(dataset['training tweets'])):
+		new_dataset['training tweets'][i] = dataset['training tweets'][p[i]] 
+		new_dataset['training tags'][i] = dataset['training tags'][p[i]] 
+	return new_dataset
+
+
+# this function augments dataset to have more or less the same number of answers 
+def equalize_training_classes(dataset):
+	dataset = copy.deepcopy(dataset)
+	vals = [[], [], []]
+	for i in range(len(dataset['training tags'])):
+		vals[dataset['training tags'][i]].append(dataset['training tweets'][i])
+	size = max(len(vals[0]), len(vals[1]), len(vals[2]))
+	def add_to(l):
+		start_size = len(l)
+		while len(l) < size:
+			l.append(l[np.random.randint(0, start_size)])
+		return l
+	dataset['training tweets'] = []
+	dataset['training tags'] = []
+	for j in range(3):
+		if len(vals[j]) > 0:
+			for i in add_to(vals[j]):
+				dataset['training tweets'].append(i)
+				dataset['training tags'].append(j)
+	random_shuffle_train_dataset(dataset)
+	return dataset
