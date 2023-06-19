@@ -52,6 +52,17 @@ class TweetToVec:
 		vec = np.concatenate(np.array(vec))
         
 		return vec
+	
+	def fixed_length_2d(self, tweet):
+        
+		vec = self.get_list_of_embeddings(tweet)
+        
+		while not self.long_enough(vec):
+			vec.append(self.get_null_embedding())
+        
+		vec = vec[:self.L]
+        
+		return vec
     
 	def average(self, tweet):
         
@@ -70,8 +81,15 @@ class TweetToVec:
 		vec = np.concatenate(np.array(vec))
         
 		return vec
+        	
+	def take_all_2d(self, tweet):
         
-    
+		vec = self.get_list_of_embeddings(tweet)
+		vec = np.array(vec)
+                
+		return vec
+
+
 	def translate_single(self, tweet):
 		'''
 		tweet: list of strings
@@ -86,6 +104,12 @@ class TweetToVec:
         
 		if self.method == 'take_all':
 			return self.take_all(tweet)
+		
+		if self.method == 'take_all_2d':
+			return self.take_all_2d(tweet)
+		
+		if self.method == 'fixed_length_2d':
+			return self.fixed_length_2d(tweet)
 	
 	def translate_to_vectors(self, tweets):
 		
@@ -152,3 +176,11 @@ class TweetToVec:
 		batched_dataset['test tags'] = batched_tags[0]
 		
 		return batched_dataset
+
+	def vectorize_and_batch_dataset(self, dataset, batch_size, equalize_training_classes):
+		dataset = copy.deepcopy(dataset)
+		if equalize_training_classes:
+			dataset = utils.equalize_training_classes(dataset)
+		vectorized = self.vectorize_dataset(dataset)
+		batched = self.batch_dataset(vectorized, batch_size)
+		return batched
