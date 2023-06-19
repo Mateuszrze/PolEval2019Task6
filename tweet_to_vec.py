@@ -161,9 +161,12 @@ class TweetToVec:
 		
 		return vectorized_dataset
 	
-	def batch_dataset(self, dataset, batch_size = 32, as_tensors = True):
+	def batch_dataset(self, dataset, batch_size = 32, as_tensors = True, random_shuffle = False):
 		
 		batched_dataset = copy.deepcopy(dataset)
+
+		if random_shuffle:
+			batched_dataset = utils.random_shuffle_train_dataset(batched_dataset)
 		
 		batched_vectors, batched_tags = self.get_batched_data(vectors = batched_dataset['training tweets'], tags = batched_dataset['training tags'], batch_size = batch_size, as_tensors = as_tensors)
 		
