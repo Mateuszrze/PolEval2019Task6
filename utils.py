@@ -68,7 +68,7 @@ def extract_validation_from_training(dataset, percent=0.1):
 	new_dataset['training tags'] = []
 	new_dataset['validation tweets'] = []
 	new_dataset['validation tags'] = []
-	validation_indexes = set(np.random.default_rng().choice(len(dataset['training tweets']), size, replace=False))
+	validation_indexes = set(np.random.default_rng(0).choice(len(dataset['training tweets']), size, replace=False))
 	for i in range(len(dataset['training tweets'])):
 		if i in validation_indexes:
 			new_dataset['validation tweets'].append(dataset['training tweets'][i])
