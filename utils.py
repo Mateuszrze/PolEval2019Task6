@@ -60,3 +60,20 @@ def equalize_training_classes(dataset):
 				dataset['training tags'].append(j)
 	random_shuffle_train_dataset(dataset)
 	return dataset
+
+def extract_validation_from_training(dataset, percent=0.1):
+	size = int(percent * len(dataset['training tweets']))
+	new_dataset = copy.deepcopy(dataset)
+	new_dataset['training tweets'] = []
+	new_dataset['training tags'] = []
+	new_dataset['validation tweets'] = []
+	new_dataset['validation tags'] = []
+	validation_indexes = set(np.random.default_rng().choice(len(dataset['training tweets']), size, replace=False))
+	for i in range(len(dataset['training tweets'])):
+		if i in validation_indexes:
+			new_dataset['validation tweets'].append(dataset['training tweets'][i])
+			new_dataset['validation tags'].append(dataset['training tags'][i])		
+		else:
+			new_dataset['training tweets'].append(dataset['training tweets'][i])
+			new_dataset['training tags'].append(dataset['training tags'][i])
+	return new_dataset

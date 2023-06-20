@@ -158,7 +158,9 @@ class TweetToVec:
 		
 		vectorized_dataset['training tweets'] = self.translate_to_vectors(dataset['training tweets'])
 		vectorized_dataset['test tweets'] = self.translate_to_vectors(dataset['test tweets'])
-		
+		if 'validation tweets' in vectorized_dataset.keys():
+			vectorized_dataset['validation tweets'] = self.translate_to_vectors(dataset['validation tweets'])
+
 		return vectorized_dataset
 	
 	def batch_dataset(self, dataset, batch_size = 32, as_tensors = True, random_shuffle = False):
@@ -177,7 +179,14 @@ class TweetToVec:
 		
 		batched_dataset['test tweets'] = batched_vectors[0]
 		batched_dataset['test tags'] = batched_tags[0]
-		
+
+		if 'validation tweets' in batched_dataset.keys():
+			batched_vectors, batched_tags = self.get_batched_data(vectors = batched_dataset['validation tweets'], tags = batched_dataset['validation tags'], batch_size = batch_size, as_tensors = as_tensors)
+			
+			batched_dataset['validation tweets'] = batched_vectors
+			batched_dataset['validation tags'] = batched_tags
+
+
 		return batched_dataset
 
 	def vectorize_and_batch_dataset(self, dataset, batch_size, equalize_training_classes):
