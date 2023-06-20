@@ -181,10 +181,10 @@ class TweetToVec:
 		batched_dataset['test tags'] = batched_tags[0]
 
 		if 'validation tweets' in batched_dataset.keys():
-			batched_vectors, batched_tags = self.get_batched_data(vectors = batched_dataset['validation tweets'], tags = batched_dataset['validation tags'], batch_size = batch_size, as_tensors = as_tensors)
+			batched_vectors, batched_tags = self.get_batched_data(vectors = batched_dataset['validation tweets'], tags = batched_dataset['validation tags'], batch_size = len(batched_dataset['validation tweets']), as_tensors = as_tensors)
 			
-			batched_dataset['validation tweets'] = batched_vectors
-			batched_dataset['validation tags'] = batched_tags
+			batched_dataset['validation tweets'] = batched_vectors[0]
+			batched_dataset['validation tags'] = batched_tags[0]
 
 
 		return batched_dataset
