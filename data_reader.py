@@ -4,6 +4,11 @@ from tqdm import tqdm
 from collections import defaultdict
 from nltk.tokenize import word_tokenize as nlkt_tokenize
 
+try:
+	from transformers import BertTokenizer	
+except:
+	print("Warning! BERT not installed (if you are Rzepa, it's no problem)")
+
 import utils
 
 def replace_specials(text):
@@ -21,36 +26,68 @@ def replace_specials(text):
 		text = text.replace(special, specials[special])
 		    
 	return text
-    
+
+def delete_spam(text):
+
+	spam_list = [
+		'@anonymized_account'
+		]
+	
+	for spam in spam_list:
+		text = text.replace(spam, '')
+	
+	return text
+
+def no_cleaning(text):
+	return text
+
+def strict_cleaning(text):
+
+	text_clean = replace_specials(text)
+	text_very_clean = delete_spam(text)
+	return text_very_clean
+
 def naive_tokenize(text):
 	return text.split(' ')
 
 def tokenize_with_nlkt(text):
     
-	text_clean = replace_specials(text)
-	text_lowered = text_clean.lower()
+	text_lowered = text.lower()
 	tokenized = nlkt_tokenize(text_lowered)
     
 	return tokenized
     
+def tokenize_for_bert(text):
+
+	bert_tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+	bert_tokenizer(text, padding='max_length', max_length = 512, truncation=True, return_tensors="pt")
 
 
 class DataReader:
     
-	def __init__(self, default_tokenize):
+	def __init__(self, default_tokenize, cleaning_policy = 'standard'):
 		
 		tokenize_methods = {
 			'nlkt' : tokenize_with_nlkt,
-			'naive' : naive_tokenize	
+			'naive' : naive_tokenize,	
+			'for_bert' : tokenize_for_bert
+		}
+		
+		cleaning_policies = {
+			'no' : no_cleaning,
+			'standard' : replace_specials,
+			'strict' : strict_cleaning,
 		}
 		
 		self.default_tokenize = tokenize_methods[default_tokenize]
+		self.default_clean = cleaning_policies[cleaning_policy]
 		self.datasets = {}
     
 	def read_data(self, filepath, tokenize = None, use_tqdm = True):
 	 
 		if tokenize is None:
 			tokenize = self.default_tokenize
+		clean_text = self.default_clean
         
 		data = []
         
@@ -59,7 +96,7 @@ class DataReader:
 		if use_tqdm:
 			i = tqdm(i)
 		for line in i:
-			data.append(tokenize(line))
+			data.append(tokenize(clean_text(line)))
         
 		return data
     
