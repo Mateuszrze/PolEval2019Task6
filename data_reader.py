@@ -47,7 +47,7 @@ class DataReader:
 		self.default_tokenize = tokenize_methods[default_tokenize]
 		self.datasets = {}
     
-	def read_data(self, filepath, tokenize = None):
+	def read_data(self, filepath, tokenize = None, use_tqdm = True):
 	 
 		if tokenize is None:
 			tokenize = self.default_tokenize
@@ -55,22 +55,28 @@ class DataReader:
 		data = []
         
 		my_file = open(filepath, 'r')
-		for line in tqdm(my_file.readlines()):
+		i = my_file.readlines()
+		if use_tqdm:
+			i = tqdm(i)
+		for line in i:
 			data.append(tokenize(line))
         
 		return data
     
-	def read_tags(self, filepath):
+	def read_tags(self, filepath, use_tqdm = True):
 	        
 		tags = []
         
 		my_file = open(filepath, 'r')
-		for line in tqdm(my_file.readlines()):
+		i = my_file.readlines()
+		if use_tqdm:
+			i = tqdm(i)
+		for line in i:
 			tags.append(int(line))
         
 		return tags
     
-	def read_dataset(self, description):
+	def read_dataset(self, description, use_tqdm = True):
 	
 		training_tweets_file = description['training tweets']
 		training_tags_file = description['training tags']
@@ -78,11 +84,11 @@ class DataReader:
 		test_tweets_file = description['test tweets']
 		test_tags_file = description['test tags']
 		
-		training_tweets = self.read_data(training_tweets_file)
-		training_tags = self.read_tags(training_tags_file)
+		training_tweets = self.read_data(training_tweets_file, use_tqdm=use_tqdm)
+		training_tags = self.read_tags(training_tags_file, use_tqdm=use_tqdm)
 		
-		test_tweets = self.read_data(test_tweets_file)
-		test_tags = self.read_tags(test_tags_file)
+		test_tweets = self.read_data(test_tweets_file, use_tqdm=use_tqdm)
+		test_tags = self.read_tags(test_tags_file, use_tqdm=use_tqdm)
 		
 		
 		dataset = {
@@ -95,7 +101,7 @@ class DataReader:
 		name = description['name']
 		self.datasets[name] = dataset
 
-	def read_embeddings(self, filename):
+	def read_embeddings(self, filename, use_tqdm = True):
 	
 		vectors = dict()
         
@@ -106,7 +112,10 @@ class DataReader:
 		W = int(w_str)
 		N = int(n_str)
         
-		for line in tqdm(lines[1:]):
+		l = lines[1:]
+		if use_tqdm:
+			l = tqdm(l)
+		for line in l:
 			vec, word = utils.str_to_vector(line, starts_with_word=True)
 			vectors[word] = vec
         
