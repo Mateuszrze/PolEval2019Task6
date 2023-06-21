@@ -28,7 +28,7 @@ class BertNetwork(nn.Module):
     
 	def forward(self, x):
 		
-		spam, output_from_bert = self.bercior(input_ids = x['input_ids'], attention_mask = x['attention_mask'], return_dict=False)
+		spam, output_from_bert = self.bercior(input_ids = x['input_ids'].to(self.device), attention_mask = x['attention_mask'].to(self.device), return_dict=False)
 		final_results = self.model(output_from_bert)
 		return final_results
 	
@@ -42,16 +42,20 @@ class BertNetwork(nn.Module):
 	
 		optimizer = get_optimizer(self.model.parameters())
 		scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.9)
+		
+		use_cuda = torch.cuda.is_available()
+		self.device = torch.device("cuda" if use_cuda else "cpu")
+		self.to(self.device)
         
 		for epoch in range(epochs):
 			tot_loss = 0
-			losses = []
+			
 			for (input_batch, true_classes) in tqdm(zip(training_data, training_classes)):
 			
 				preds = self.forward(input_batch) 
-				loss = self.loss(preds, true_classes)
+				loss = self.loss(preds, true_classes.to(self.device))
 				tot_loss += loss
-				losses.append(float(loss))
+				
 				optimizer.zero_grad()
 				loss.backward()
 				optimizer.step()
