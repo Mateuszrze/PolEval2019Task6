@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from tqdm import tqdm
 
 from transformers import BertModel
 
@@ -45,7 +46,7 @@ class BertNetwork(nn.Module):
 		for epoch in range(epochs):
 			tot_loss = 0
 			losses = []
-			for (input_batch, true_classes) in zip(training_data, training_classes):
+			for (input_batch, true_classes) in tqdm(zip(training_data, training_classes)):
 			
 				preds = self.forward(input_batch) 
 				loss = self.loss(preds, true_classes)
