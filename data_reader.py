@@ -6,6 +6,7 @@ from nltk.tokenize import word_tokenize as nlkt_tokenize
 
 try:
 	from transformers import BertTokenizer	
+	bert_tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
 except:
 	print("Warning! BERT not installed (if you are Rzepa, it's no problem)")
 
@@ -58,9 +59,9 @@ def tokenize_with_nlkt(text):
 	return tokenized
     
 def tokenize_for_bert(text):
-
-	bert_tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
-	bert_tokenizer(text, padding='max_length', max_length = 512, truncation=True, return_tensors="pt")
+	
+	tokenized = bert_tokenizer(text, padding='max_length', max_length = 128, truncation=True, return_tensors="pt")
+	return tokenized
 
 
 class DataReader:
